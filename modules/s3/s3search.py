@@ -3361,10 +3361,9 @@ class S3OptionsFilter(S3FilterWidget):
 
         # Construct HTML names, classes and ids for the widget
         name = "%s_%s" % (attr["_name"], field_name.split("$", 1)[0])
-        self.attr["_name"] = name
-        self.attr["_id"] = name
-
+        attr["_name"] = name
         attr["_id"] = name
+
         if "_class" in attr and attr["_class"]:
             _class = "%s %s %s" % (attr["_class"],
                                    "s3-checkboxes-widget",
@@ -3421,6 +3420,75 @@ class S3OptionsFilter(S3FilterWidget):
 class S3RangeFilter(S3FilterWidget):
 
     _class = "range-filter"
+
+    # The gt and lt operators are not really needed. For integer ranges, the
+    # user can simply adjust the min and max by one to convert to ge and le.
+    # For (real, mathematical) real numbers, the probability of any given
+    # endpoint value sampled from a continuous function is zero, so whether
+    # the endpoint is inclusive or not makes no difference. For (computer)
+    # floating point numbers, inclusive or exclusive makes little difference:
+    # If the values are continuous, then the user can just pick a dividing
+    # value at the boundary. If the are actually lumped into discrete values,
+    # this reverts to the integer case -- the user can set the boundaries at
+    # the value they want to include. We can see how users react -- if they
+    # catch on right away, this is simpler than having controls for (and
+    # explaining) inclusive vs. exclusive range ends.
+    operator = ["ge", "le"]
+
+    # These are default limits for the slider. They can be overridden via
+    # "min" and "max" values supplied to the constructor in its attr dict.
+    # The defaults are not shown as initial values in the text boxes, nor
+    # do they prevent the user from entering values outside this range
+    # explicitly in the input boxes -- they are only needed to make the slider
+    # vaguely usable in the case where the widget is instantiated without
+    # supplied limits.
+    default_min = 0
+    default_max = 1000
+
+    # -------------------------------------------------------------------------
+    def widget(self, resource, values):
+        """
+            Render this widget as HTML helper object(s)
+
+            @param resource: the resource
+            @param values: the search values from the URL query
+
+            Optional "min" and "max" can be supplied in constructor via attr.
+        """
+
+        attr = self.attr
+        opts = self.opts
+
+        if "_class" in attr and attr["_class"]:
+            _class = "%s %s" % (attr["_class"], self._class)
+        else:
+            _class = self._class
+        attr["_class"] = _class
+
+        min = opts.min
+        max = opts.max
+        # if min is None or max is None:
+            # If no provided limits, and if this is a field with a requires,
+            # walk the validator expression, looking for IS_IN_X_RANGE, and
+            # extract limits from their minimum and maximum
+        #slider_min = min if min else default_min
+        #slider_max = max if max else default_max
+
+        # Add two visible input regions side by side. Prefill min, max if
+        # they're set.
+        # This initial version does not have either a slider nor does it
+        # support multiple (split) ranges.
+        name_prefix = "%s_%s" % (attr["_name"], field_name.split("$", 1)[0])
+        min_name = "%s_%s" % (name_prefix, "min")
+        max_name = "%s_%s" % (name_prefix, "max")
+        min_box = INPUT(_name=min_name, _id=min_name, _type="text")
+        max_box = INPUT(_name=max_name, _id=max_name, _type="text")
+        if min:
+            min_box["value"] = min
+        if max:
+            max_box["value"] = max
+
+        return DIV(T("Minimum:"), min_box, T("Maximum:"), max_box)
 
 # =============================================================================
 class S3DateFilter(S3FilterWidget):
