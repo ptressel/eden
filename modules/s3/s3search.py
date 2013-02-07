@@ -3422,8 +3422,8 @@ class S3RangeFilter(S3FilterWidget):
     _class = "range-filter"
 
     # The gt and lt operators are not really needed. For integer ranges, the
-    # user can simply adjust the min and max by one to convert to ge and le.
-    # For (real, mathematical) real numbers, the probability of any given
+    # user can simply adjust the minimum and maximum by one to convert to ge
+    # and le. For (mathematical) real numbers, the probability of any given
     # endpoint value sampled from a continuous function is zero, so whether
     # the endpoint is inclusive or not makes no difference. For (computer)
     # floating point numbers, inclusive or exclusive makes little difference:
@@ -3436,14 +3436,14 @@ class S3RangeFilter(S3FilterWidget):
     operator = ["ge", "le"]
 
     # These are default limits for the slider. They can be overridden via
-    # "min" and "max" values supplied to the constructor in its attr dict.
-    # The defaults are not shown as initial values in the text boxes, nor
-    # do they prevent the user from entering values outside this range
-    # explicitly in the input boxes -- they are only needed to make the slider
-    # vaguely usable in the case where the widget is instantiated without
+    # "ge" (minimum) and "le" (maximum) values supplied to the constructor in
+    # its attr dict. The defaults are not shown as initial values in the text
+    # boxes, nor do they prevent the user from entering values outside this
+    # range explicitly in the input boxes -- they are only needed to make the
+    # slider usable in the case where the widget is instantiated without
     # supplied limits.
-    default_min = 0
-    default_max = 1000
+    default_ge = 0
+    default_le = 1000
 
     # -------------------------------------------------------------------------
     def widget(self, resource, values):
@@ -3453,7 +3453,7 @@ class S3RangeFilter(S3FilterWidget):
             @param resource: the resource
             @param values: the search values from the URL query
 
-            Optional "min" and "max" can be supplied in constructor via attr.
+            Optional "ge" and "le" can be supplied in constructor via attr.
         """
 
         attr = self.attr
@@ -3465,30 +3465,30 @@ class S3RangeFilter(S3FilterWidget):
             _class = self._class
         attr["_class"] = _class
 
-        min = opts.min
-        max = opts.max
-        # if min is None or max is None:
-            # If no provided limits, and if this is a field with a requires,
-            # walk the validator expression, looking for IS_IN_X_RANGE, and
-            # extract limits from their minimum and maximum
-        #slider_min = min if min else default_min
-        #slider_max = max if max else default_max
+        ge = opts.ge
+        le = opts.le
+        # if ge is None or le is None:
+            # Can we fill in the missing limit(s)?f this is a field with a
+            # requires, walk the validator expression, looking for
+            # IS_IN_X_RANGE, and extract limits from their minimum and maximum.
+        #slider_ge = ge if ge else default_ge
+        #slider_le = le if le else default_le
 
-        # Add two visible input regions side by side. Prefill min, max if
+        # Add two visible input regions side by side. Prefill ge, le if
         # they're set.
         # This initial version does not have either a slider nor does it
         # support multiple (split) ranges.
         name_prefix = "%s_%s" % (attr["_name"], field_name.split("$", 1)[0])
-        min_name = "%s_%s" % (name_prefix, "min")
-        max_name = "%s_%s" % (name_prefix, "max")
-        min_box = INPUT(_name=min_name, _id=min_name, _type="text")
-        max_box = INPUT(_name=max_name, _id=max_name, _type="text")
-        if min:
-            min_box["value"] = min
-        if max:
-            max_box["value"] = max
+        ge_name = "%s_%s" % (name_prefix, "ge")
+        le_name = "%s_%s" % (name_prefix, "le")
+        ge_box = INPUT(_name=ge_name, _id=ge_name, _type="text")
+        le_box = INPUT(_name=le_name, _id=le_name, _type="text")
+        if ge:
+            ge_box["value"] = ge
+        if le:
+            le_box["value"] = le
 
-        return DIV(T("Minimum:"), min_box, T("Maximum:"), max_box)
+        return DIV(T("Minimum:"), ge_box, T("Maximum:"), le_box)
 
 # =============================================================================
 class S3DateFilter(S3FilterWidget):

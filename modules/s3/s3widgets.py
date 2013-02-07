@@ -226,6 +226,13 @@ class S3DateTimeWidget(FormWidget):
                        value = value,
                        old_value = value)
 
+        # FormWidget._attributes will override what's supplied in default with
+        # what's in attributes. Caller may want to supply additional classes.
+        # Don't force them to know we're using anytime.
+        classes = attributes.get("_class", None)
+        if classes and "anytime" not in classes:
+            attributes["_class"] = "%s %s" % (classes, "anytime")
+
         attr = StringWidget._attributes(field, default, **attributes)
 
         selector = str(field).replace(".", "_")

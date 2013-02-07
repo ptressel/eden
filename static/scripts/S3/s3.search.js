@@ -364,6 +364,18 @@ S3.search.filterURL = function(url) {
         }
     });
 
+    // Numerical range widget -- each widget has two inputs.
+    $(".range-filter:visible input[name$='_ge'],input[name$='_le']").each(function() {
+        var id = $(this).attr('id');
+        var url_var = $('#' + id + '-data').val();
+        var value = $(this).val();
+        if (value) {
+            queries.push(url_var + '=' + value);
+        }
+    });
+
+    // Date(time) range widget
+
     // Other widgets go here...
 
     // Construct the URL
