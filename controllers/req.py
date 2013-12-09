@@ -849,11 +849,18 @@ def req_item_inv_item():
     output = {}
 
     output["title"] = T("Request Stock from Available Warehouse")
-    output["req_btn"] = A(T("Return to Request"),
-                          _href = URL(c="req", f="req",
-                                      args=[req_item.req_id, "req_item"]),
-                          _class = "action-btn"
-                          )
+    from s3layouts import S3Button
+    output["req_btn"] = S3button(label=T("Return to Request"),
+                                 c="req", f="req", m="req_item",
+                                 record_id=req_item.req_id,
+                                )
+    # vvvvv
+    #output["req_btn"] = A(T("Return to Request"),
+    #                      _href = URL(c="req", f="req",
+    #                                  args=[req_item.req_id, "req_item"]),
+    #                      _class = "action-btn"
+    #                      )
+    # ^^^^^
 
     output["req_item"] = TABLE( TR(
                                     TH( "%s: " % T("Requested By") ),
@@ -1241,13 +1248,21 @@ def commit_rheader(r):
                                        ),
                                     ),
                                 )
-                prepare_btn = A(T("Prepare Shipment"),
-                                _href = URL(f = "send_commit",
-                                            args = [record.id]
-                                            ),
-                                _id = "send_commit",
-                                _class = "action-btn"
-                                )
+                from s3layouts import S3Button
+                prepare_btn = S3button(label=T("Prepare Shipment"),
+                                       c="req", f="send_commit",
+                                       record_id=record.id,
+                                       _id="send_commit",
+                                      )
+                # vvvvv
+                #prepare_btn = A(T("Prepare Shipment"),
+                #                _href = URL(f = "send_commit",
+                #                            args = [record.id]
+                #                            ),
+                #                _id = "send_commit",
+                #                _class = "action-btn"
+                #                )
+                # ^^^^^
 
                 s3.rfooter = TAG[""](prepare_btn)
 

@@ -403,4 +403,442 @@ def homepage(module=None, *match, **attr):
 
     return layout(name, c=c, f=f, **attr)
 
+# =============================================================================
+class S3Button(S3NavigationItem):
+    """
+        Generic button
+    """
+
+    # Method names
+    # @ToDo: Everyone has their own list of methods. Can't we share?
+    # @ToDo: Fill in the tables below for these methods.
+    CREATE = "create"
+    READ = "read"
+    UPDATE = "update"
+    DELETE = "delete"
+    LIST = "list"
+    SEARCH = "search"
+    REPORT = "report"
+    DISPLAY = "display"
+    MAP = "map"
+    SUMMARY = "summary"
+    LOGIN = "login"
+    # Not all requests have explicit methods nor methods that can be inferred,
+    # e.g. some are for custom functions. Provide generic defaults for those.
+    NOMETHOD = "NOMETHOD"
+
+    # Action <--> Method, for any actions whose name is not also the method.
+    # @ToDo: Find out if "list", "summary", and "copy" can be added to
+    # S3Permission.METHODS.  If so, they do not have to be replaced here by the
+    # method with equivalent permission, i.e. "list", "summary" -> "read", and
+    # "copy" -> "create".
+    ACTION_METHOD = {"edit": UPDATE,
+                     "add": CREATE,
+                    }
+
+    # Tooltips for buttons default to the appropriate crud string associated
+    # with the method but the key for each method differs.
+    # @ToDo: We don't have crud strings for all methods, e.g. read, summary.
+    CRUD_NAMES = {CREATE: "label_create_button",
+                  READ: "title_display",
+                  UPDATE: "title_update",
+                  DELETE: "label_delete_button",
+                  LIST: "label_list_button",
+                  SEARCH: "title_search",
+                  REPORT: "title_report",
+                  DISPLAY: "title_display",
+                  MAP: "title_map",
+                 }
+
+    # Standard button class.
+    STANDARD_BUTTON = "action-btn"
+    # Classes for bootstrap buttons.
+    BOOTSTRAP_PRIMARY = "btn btn-primary"
+    BOOTSTRAP_DANGER = "btn btn-danger"
+    BOOTSTRAP_DEFAULT = "btn"  # Add btn-default if we want to control the style.
+
+    # Format keyword for datalist buttons.
+    DL_BUTTON = "dl-button"
+
+    # Icon classes for datalist buttons. Fallback if no icon is a labeled button.
+    # @ToDo: Will we always want big-add, or should we pass it in?
+    DL_BUTTON_ICON = {NOMETHOD: "icon-asterisk",
+                      CREATE: "icon-plus-sign big-add",
+                      UPDATE: "icon-edit",
+                      DELETE: "icon-trash",
+                      LOGIN: "icon-signin",
+                     }
+
+    # Method and extension for datalist button href. Delete does not have an href.
+    DL_BUTTON_ARG = {NOMETHOD: "",
+                     CREATE: "create.popup",
+                     UPDATE: "update.popup",
+                     DELETE: "",
+                     LOGIN: "",
+                    }
+
+    # Datalist button class.
+    DL_BUTTON_CLASS = {NOMETHOD: "",
+                       CREATE: "s3_modal",
+                       UPDATE: "s3_modal",
+                       DELETE: "dl-item-delete",
+                       LOGIN: "",
+                      }
+
+    # Additional bootstrap classes. Container buttons get primary styling.
+    # @ToDo: Only add "btn" and let user pass in btn-primary.
+    DL_BUTTON_BOOTSTRAP = {UPDATE: BOOTSTRAP_DEFAULT,
+                           CREATE: BOOTSTRAP_PRIMARY,
+                           UPDATE: BOOTSTRAP_DEFAULT,
+                           DELETE: BOOTSTRAP_DANGER,
+                           LOGIN: BOOTSTRAP_DEFAULT,
+                          }
+
+    def __init__(self,
+                 label=None,
+                 a=None,
+                 c=None,
+                 f=None,
+                 m=None,
+                 p=None,
+                 t=None,
+                 args=None,
+                 vars=None,
+                 extension=None,
+                 r=None,
+                 url=None,
+                 title=None,
+                 tooltip=None,
+                 icon=None,
+                 _id=None,
+                 _name=None,
+                 _class=None,
+                 _title=None,
+                 _type=None,
+                 _value=None,
+                 format=None,
+                 **attributes
+                ):
+        """
+            Constructor
+
+            Currently supports CRUD and action buttons in either the standard
+            format, for full-sized web pages, or in "dl-button" format, for use
+            on datalist items, which may be in "card" elements, or on datalist
+            container widgets.
+
+            The only required parameters for CRUD buttons are the controller and
+            function or the table name (which may be supplied as the request r).
+            If the button acts on a specific record, then record_id is needed
+            (except for a "dl-button" delete). The method defaults to "list" if
+            no record_id is specified, else "read". 
+            
+            For datalist buttons, the listid is required. This is the HTML id
+            property of the datalist that contains this item, or "datalist".
+
+            @param a: the application (defaults to current.request.application)
+            @param c: the controller / module
+            @param f: the function / resource
+            @param t: the table name
+            @param m: the method or action -- this can be supplied as the
+                   method, e.g. "list", "summary", "update", "delete",... or
+                   the button action, e.g. "edit" or "add"
+            @param args: the URL arguments list
+            @param vars: the URL variables dict
+            @param extension: the URL extension
+            @param record_id: the id of the record to act on (if any) in the
+                   given table
+
+            @param r: the request to default the above from
+            
+            @param url: custom href URL, overrides URL constructed from the above
+
+            @param label: custom button label
+            @param title: custom tooltip title
+            @param tooltip: custom tooltip text
+            @param icon: custom icon class name (does not include "icon")
+            @param crud_name: the name of the crud_strings element to use if
+                   label or tooltip is not specified and the default crud
+                   string (based on method) is not wanted.
+
+            # Normally, the following are not specified.
+            # @ToDo: Allow these to completely override the layout params?
+            @param _id: the HTML id
+            @param _name: the HTML name
+            @param _class: the HTML class (this is added to layout classes)
+            @param _title: the HTML title
+            @param _type: the HTML type
+            @param _value: the HTML value
+            @param _target: the HTML target
+
+            @param format: keyword specifying the style of button. Default
+                   format is a standard button on a full web page.
+                   Current alternate options are:
+                   "dl-button" for a button on an item in a datalist or on the
+                        border of a widget containing a datalist
+
+            @param attributes: any other attributes used by the layout
+
+            Additional parameters for specific formats and methods:
+            
+            Standard CRUD buttons may have:
+            @param custom: a custom button rendered as a Web2py HTML helper.
+                   The only alteration will be to add bootstrap classes if
+                   needed.
+
+            A datalist edit button requires:
+            @param listid: the listid (HTML id property of the datalist that
+                   contains this item), or "datalist".
+                   The URL var "refresh" will be set to the value of listid.
+                   If this is not "datalist", then "record": record_id is
+                   also included in the URL vars.
+        """
+
+        layout_method = self.layout
+        if format == S3Button.DL_BUTTON:
+            layout_method = self.layout_dl
+
+        # @ToDo: Clean up anything sending in alternate names for crud methods
+        # then get rid of this?
+        if m in self.ACTION_METHOD:
+            m = self.ACTION_METHOD[m]
+
+        return super(S3Button, self).__init__(a=a, c=c, f=f, t=t, m=m, p=p,
+                                              record_id=record_id,
+                                              extension=extension,
+                                              args=args,
+                                              vars=vars,
+                                              r=r,
+                                              url=url,
+                                              label=label,
+                                              tooltip=tooltip,
+                                              icon=icon,
+                                              format=format,
+                                              custom=custom,
+                                              layout=layout_method,
+                                              _id=_id,
+                                              _name=_name,
+                                              _class=_class,
+                                              _type=_type,
+                                              _value=_value,
+                                              _title=_title,
+                                              _target=_target,
+                                              **attributes
+                                             )
+
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def crud_string(item):
+        """ Get appropriate crud string or substitute """
+
+        S3CRUD = current.manager.S3CRUD
+
+        crud_str = ""
+        crud_name = item.crud_name
+        method = item.method
+        tablename = item.tablename
+        if not crud_name and method:
+            crud_name = S3Button.CRUD_NAMES.get(method, None)
+        if crud_name and tablename:
+            crud_str = S3CRUD.crud_string(item.tablename, crud_name)
+        if not crud_str:
+            crud_str = item.label
+        elif method:
+            crud_str = T(method)
+
+        return crud_str
+
+    # -------------------------------------------------------------------------
+    # @ToDo: It would be much better were this done where the user's access is
+    # known, namely, in S3NavigationItem.__init__.
+
+    @staticmethod
+    def style_method(item):
+        """
+            Infer method if not specified, for selecting style elements
+
+            If this is a request for a resource without a method, it will turn
+            into a read / update if it has a specific id, or list if not.
+
+            The purpose of this is to get a better default for icons, etc.,
+            in this very common case. This is *not* to be used for the method
+            in the href.
+        """
+
+        if item.method:
+            return item.method
+
+        # It is only appropriate to default the method when the request is
+        # for a resource, rather than for a custom function.
+        # @ToDo: Verify that S3NavigationItem.__init__ does not set this
+        # unless c and f are for an existing table.
+        if not item.tablename:
+            return S3Button.NOMETHOD
+
+        # @ToDo: Could S3NavigationItem.__init__ determine whether the user
+        # will get read or update access to a specific record, and leave a
+        # breadcrumb so we could use the proper icon?
+        DEFAULT_METHOD = {True: LIST,
+                          False: UPDATE}
+        return DEFAULT_METHOD[item.record_id is None]
+            
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def layout(item):
+        """
+            Layout for a standard CRUD or action button
+
+            On permission failure, returns "" for the convenience of the caller.
+        """
+
+        if not item.authorized:
+            return ""
+
+        bootstrap = current.response.s3.crud.formstyle == "bootstrap"
+
+        attr = item.attr
+        opts = item.opts
+
+        # Custom button?
+        custom = attr.custom
+        if custom and bootstrap and hasattr(custom, "add_class"):
+            custom.add_class(S3Button.BOOTSTRAP_PRIMARY)
+            return custom
+
+        custom_class = opts.get("_class", "")
+        _class = "%s %s" % (S3Button.ACTION_BUTTON, custom_class)
+        # @ToDo: Is this a misuse of bootstrap btn-primary? It is supposed to
+        # go in one main / emphasized button in a set of buttons, no?)
+        if bootstrap:
+            _class = "%s %s" % (_class, S3Button.BOOTSTRAP_PRIMARY)
+
+        label = item.label
+        if not label:
+            label = S3Button.crud_string(item)
+
+        _href = opts._href
+        if not _href:
+            _href=item.url()
+        button = A(label,
+                   _id=opts._id,
+                   _class=_class,
+                   _href=_href,
+                   _title=opts._title,
+                   _target=opts._target,
+                   _role="button",
+                  )
+
+        title = item.title
+        tooltip = item.tooltip
+        if tooltip is not None:
+            if title is None:
+                title = label
+            ttip = DIV(_class="tooltip",
+                       _title="%s|%s" % (title, tooltip))
+            button = DIV(button, ttip)
+
+        return button
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def layout_dl(item):
+        """
+            Layout for a CRUD or action button in datalist format
+
+            Typically these will be either edit or delete buttons for datalist
+            item thumbnails on cards, or an add button on the datalist container
+            widget.
+            
+            A datalist button is typically small, so currently uses only an icon
+            with no label. For the tooltip, a supplied tooltip will be used if
+            any, else the label, else the crud string for the supplied
+            crud_name, else the crud string associated with the method.
+    
+            The following should be provided
+            @param c: controller
+            @param f: function
+            @param m: method: See the DL_BUTTON_* tables above for which methods
+                      currently have default icons, etc. Add to said tables to
+                      include more methods.
+            @param t: table name (alternative to c, f)
+            @param r: request (alternative to c, f, m)
+            @param record_id: id of record to edit (not needed for delete)
+            @param listid: value of refresh var, typically the listid (HTML id
+                   property of the containing list) or "datalist" -- if not
+                   "datalist", then "record": id is also included in vars
+            @param vars: any extra vars besides record and refresh.
+
+            See optional params in S3Button.__init__.
+
+            On permission or other failure, returns "" for the convenience of
+            the caller.
+        """
+
+        if not item.authorized:
+            return ""
+
+        s3 = current.response.s3
+        crud = s3.crud
+        S3CRUD = current.manager.S3CRUD
+        bootstrap = crud.formstyle == "bootstrap"
+
+        attr = item.attr
+        opts = item.opts
+        vars = attr.vars
+        method = item.method
+        style_method = S3Button.style_method(item)
+
+        listid = item.listid
+        if listid:
+            vars["refresh"] = listid
+            if listid != "datalist":
+                vars["record"] = id
+
+        label = item.label
+        if not label:
+            label = S3Button.crud_string(item)
+
+        tooltip = item.tooltip
+        if not tooltip:
+            tooltip = label
+
+        icon = item.icon
+        if not icon:
+            icon = S3Button.DL_BUTTON_ICON.get(style_method, None)
+        if icon:
+            label = I(" ", _class="icon %s" % icon)
+
+        dl_class = S3Button.DL_BUTTON_CLASS.get(style_method, "")
+        custom_class = opts.get("_class", "")
+        _class = "%s %s" % (dl_class, custom_class)
+        if bootstrap:
+            b_class = S3Button.DL_BUTTON_BOOTSTRAP.get(style_method, "")
+            _class = "%s %s" % (_class, b_class)
+
+        # Delete is a special case, handled from the client, as it must
+        # remove the card from its container.
+        if method == DELETE:
+            _href = None
+
+        else:
+            _href = opts._href
+            if not _href:
+                arg = S3Button.DL_BUTTON_ARG.get(style_method, None)
+                if not arg:
+                    # Unsupported datalist button type.
+                    return ""
+                _href = URL(c=c, f=f,
+                            args=[id, arg],
+                            vars=vars)
+
+        btn = A(label,
+                _href=_href,
+                _class=_class,
+                _title=tooltip,
+                _role="button",
+               )
+
+        return btn
+
 # END =========================================================================

@@ -321,21 +321,31 @@ def render_contacts(listid, resource, rfields, record, **attr):
                      _class="media-object")
 
     # Edit Bar
-    permit = current.auth.s3_has_permission
-    table = db.pr_person
-    if permit("update", table, record_id=person_id):
-        f = current.request.function
-        vars = {}
-        if f == "organisation" and organisation_id:
-            vars["(organisation)"] = organisation_id
-        title_update = current.response.s3.crud_strings.hrm_human_resource.title_update
-        edit_btn = S3CRUD.dl_edit_button(c="hrm", f="person", id=person_id,
-                                         refresh=listid, tooltip=title_update, vars=vars)
-        edit_url = edit_btn["_href"]
-    else:
-        edit_btn = ""
-        edit_url = "#"
-        title_update = ""
+    from s3layouts import S3Button
+    vars = {}
+    if current.request.function == "organisation" and organisation_id:
+        vars["(organisation"] = organisation_id
+    edit_btn = S3Button(c="hrm", f="person", m="update",
+                        record_id=person_id, listid=listid, vars=vars,
+                        format="dl-item",
+                       ).render()
+    # vvvvv
+    #permit = current.auth.s3_has_permission
+    #table = db.pr_person
+    #if permit("update", table, record_id=person_id):
+    #    f = current.request.function
+    #    vars = {}
+    #    if f == "organisation" and organisation_id:
+    #        vars["(organisation)"] = organisation_id
+    #    title_update = current.response.s3.crud_strings.hrm_human_resource.title_update
+    #    edit_btn = S3CRUD.dl_edit_button(c="hrm", f="person", id=person_id,
+    #                                     refresh=listid, tooltip=title_update, vars=vars)
+    #    edit_url = edit_btn["_href"]
+    #else:
+    #    edit_btn = ""
+    #    edit_url = "#"
+    #    title_update = ""
+    # ^^^^^
     # Deletions failing due to Integrity Errors
     # @ToDo: Does button generation based on class=dl-item-delete properly
     # handle the case where the request resource and the resource the delete
@@ -353,6 +363,13 @@ def render_contacts(listid, resource, rfields, record, **attr):
                    _class="edit-bar fright",
                    )
 
+    # If we did not get an edit button, the user does not have edit privs.
+    if edit_btn:
+        edit_url = edit_btn["_href"]
+        title_update = edit_btn["tooltip"]
+    else:
+        edit_url = "#"
+        title_update = "" 
     avatar = A(avatar,
                _href=edit_url,
                _class="pull-left s3_modal",
@@ -479,6 +496,13 @@ def render_locations(listid, resource, rfields, record, **attr):
         represent = name
 
     # Users don't edit locations
+    # from s3layouts import S3Button
+    # edit_btn = S3Button(c="gis", f="location", m="update",
+    #                     record_id=record_id, listid=listid,
+    #                     format="dl-item").render()
+    # delete_btn = S3Button(c="gis", f="location", m="delete",
+    #                       format="dl-item").render()
+    # vvvvv
     # permit = current.auth.s3_has_permission
     # table = current.db.gis_location
     # if permit("update", table, record_id=record_id):
@@ -493,6 +517,7 @@ def render_locations(listid, resource, rfields, record, **attr):
                    # delete_btn,
                    # _class="edit-bar fright",
                    # )
+    # ^^^^^
 
     # Tallies
     # NB We assume that all records are readable here
@@ -644,6 +669,13 @@ def render_locations_profile(listid, resource, rfields, record, **attr):
 
     # We don't Edit Locations
     # Edit Bar
+    # from s3layouts import S3Button
+    # edit_btn = S3Button(c="gis", f="location", m="update",
+    #                     record_id=record_id, listid=listid,
+    #                     format="dl-item").render()
+    # delete_btn = S3Button(c="gis", f="location", m="delete",
+    #                       format="dl-item").render()
+    # vvvvv
     # permit = current.auth.s3_has_permission
     # table = current.db.gis_location
     # if permit("update", table, record_id=record_id):
@@ -657,6 +689,7 @@ def render_locations_profile(listid, resource, rfields, record, **attr):
         # delete_btn = S3CRUD.dl_delete_button(table=table)
     # else:
         # delete_btn = ""
+    # ^^^^^
     # edit_bar = DIV(edit_btn,
                    # delete_btn,
                    # _class="edit-bar fright",
@@ -784,20 +817,33 @@ def render_sites(listid, resource, rfields, record, **attr):
                               )
 
     # Edit Bar
-    permit = current.auth.s3_has_permission
-    table = current.db.org_facility
-    if permit("update", table, record_id=record_id):
-        f = current.request.function
-        vars = {}
-        if f == "organisation" and organisation_id:
-            vars["(organisation)"] = organisation_id
-        edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh=listid, vars=vars)
-    else:
-        edit_btn = ""
-    if permit("delete", table, record_id=record_id):
-        delete_btn = S3CRUD.dl_delete_button(table=table)
-    else:
-        delete_btn = ""
+    from s3layouts import S3Button
+    vars = {}
+    if current.request.function == "organisation" and organisation_id:
+        vars["(organisation"] = organisation_id
+    edit_btn = S3Button(c="org", f="facility", m="update", 
+                        record_id=record_id, listid=listid, vars=vars,
+                        format="dl-item",
+                       ).render()
+    delete_btn = S3Button(c="org", f="facility", m="delete",
+                          format="dl-item",
+                         ).render()
+    # vvvvv
+    #permit = current.auth.s3_has_permission
+    #table = current.db.org_facility
+    #if permit("update", table, record_id=record_id):
+    #    f = current.request.function
+    #    vars = {}
+    #    if f == "organisation" and organisation_id:
+    #        vars["(organisation)"] = organisation_id
+    #    edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh=listid, vars=vars)
+    #else:
+    #    edit_btn = ""
+    #if permit("delete", table, record_id=record_id):
+    #    delete_btn = S3CRUD.dl_delete_button(table=table)
+    #else:
+    #    delete_btn = ""
+    # ^^^^^
     edit_bar = DIV(edit_btn,
                    delete_btn,
                    _class="edit-bar fright",
@@ -943,17 +989,27 @@ def render_organisations(listid, resource, rfields, record, **attr):
         logo = DIV(IMG(_class="media-object"),
                    _class="pull-left")
 
-    db = current.db
-    permit = current.auth.s3_has_permission
-    table = db.org_organisation
-    if permit("update", table, record_id=record_id):
-        edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh=listid)
-    else:
-        edit_btn = ""
-    if permit("delete", table, record_id=record_id):
-        delete_btn = S3CRUD.dl_delete_button(table=table)
-    else:
-        delete_btn = ""
+    from s3layouts import S3Button
+    edit_btn = S3Button(c="org", f="organisation", m="update",
+                        record_id=record_id, listid=listid,
+                        format="dl-item",
+                       ).render()
+    delete_btn = S3Button(c="org", f="organisation", m="delete",
+                          format="dl-item",
+                         ).render()
+    # vvvvv
+    #db = current.db
+    #permit = current.auth.s3_has_permission
+    #table = db.org_organisation
+    #if permit("update", table, record_id=record_id):
+    #    edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh=listid)
+    #else:
+    #    edit_btn = ""
+    #if permit("delete", table, record_id=record_id):
+    #    delete_btn = S3CRUD.dl_delete_button(table=table)
+    #else:
+    #    delete_btn = ""
+    # ^^^^^
     edit_bar = DIV(edit_btn,
                    delete_btn,
                    _class="edit-bar fright",
@@ -1092,16 +1148,26 @@ def render_org_needs(listid, resource, rfields, record, **attr):
         logo = DIV(IMG(_class="media-object"),
                    _class="pull-left")
 
-    permit = current.auth.s3_has_permission
-    table = current.db.req_organisation_needs
-    if permit("update", table, record_id=record_id):
-        edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh=listid)
-    else:
-        edit_btn = ""
-    if permit("delete", table, record_id=record_id):
-        delete_btn = S3CRUD.dl_delete_button(table=table)
-    else:
-        delete_btn = ""
+    from s3layouts import S3Button
+    edit_btn = S3Button(c="req", f="organisation_needs", m="update",
+                        record_id=record_id, listid=listid,
+                        format="dl-item",
+                       ).render()
+    delete_btn = S3Button(c="req", f="organisation_needs", m="delete",
+                          format="dl-item",
+                         ).render()
+    # vvvvv
+    #permit = current.auth.s3_has_permission
+    #table = current.db.req_organisation_needs
+    #if permit("update", table, record_id=record_id):
+    #    edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh=listid)
+    #else:
+    #    edit_btn = ""
+    #if permit("delete", table, record_id=record_id):
+    #    delete_btn = S3CRUD.dl_delete_button(table=table)
+    #else:
+    #    delete_btn = ""
+    # ^^^^^
     edit_bar = DIV(edit_btn,
                    delete_btn,
                    _class="edit-bar fright",
@@ -1221,16 +1287,26 @@ def render_site_needs(listid, resource, rfields, record, **attr):
         logo = DIV(IMG(_class="media-object"),
                    _class="pull-left")
 
-    permit = current.auth.s3_has_permission
-    table = current.db.req_site_needs
-    if permit("update", table, record_id=record_id):
-        edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh=listid)
-    else:
-        edit_btn = ""
-    if permit("delete", table, record_id=record_id):
-        delete_btn = S3CRUD.dl_delete_button(table=table)
-    else:
-        delete_btn = ""
+    from s3layouts import S3Button
+    edit_btn = S3Button(c="req", f="site_needs", m="update",
+                        record_id=record_id, listid=listid,
+                        format="dl-item",
+                       ).render()
+    delete_btn = S3Button(c="req", f="site_needs", m="delete",
+                          format="dl-item",
+                         ).render()
+    # vvvvv
+    #permit = current.auth.s3_has_permission
+    #table = current.db.req_site_needs
+    #if permit("update", table, record_id=record_id):
+    #    edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh=listid)
+    #else:
+    #    edit_btn = ""
+    #if permit("delete", table, record_id=record_id):
+    #    delete_btn = S3CRUD.dl_delete_button(table=table)
+    #else:
+    #    delete_btn = ""
+    # ^^^^^
     edit_bar = DIV(edit_btn,
                    delete_btn,
                    _class="edit-bar fright",
@@ -1488,10 +1564,17 @@ def customize_gis_location(**attr):
                         from s3.codecs.svg import S3SVG
                         S3SVG.write_file(filename, loc.wkt)
 
-                if current.auth.s3_has_permission("update", table, record_id=record_id):
-                    edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh="datalist")
-                else:
-                    edit_btn = ""
+                from s3layouts import S3Button
+                edit_btn = S3Button(tablename=table._tablename, m="update",
+                                    record_id=record_id, listid=listid,
+                                    format="dl-item",
+                                   ).render()
+                # vvvvv
+                #if current.auth.s3_has_permission("update", table, record_id=record_id):
+                #    edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh="datalist")
+                #else:
+                #    edit_btn = ""
+                # ^^^^^
                 name = location.name
                 s3db.configure("gis_location",
                                list_fields = list_fields,
@@ -1954,16 +2037,23 @@ def customize_org_facility(**attr):
                                       list_layout = s3db.req_render_commits,
                                       )
 
-                if current.auth.s3_has_permission("update", table, record_id=record_id):
-                    edit_btn = A(I(_class = "icon icon-edit"),
-                                 _href=URL(c="org", f="facility",
-                                           args=[record_id, "update.popup"],
-                                           vars={"refresh": "datalist"}),
-                                 _class="s3_modal",
-                                 _title=s3.crud_strings["org_facility"].title_update,
-                                 )
-                else:
-                    edit_btn = ""
+                from s3layouts import S3Button
+                edit_btn = S3Button(c="org", f="facility", m="update",
+                                    record_id=record_id, listid=listid,
+                                    format="dl-item",
+                                   ).render()
+                # vvvvv
+                #if current.auth.s3_has_permission("update", table, record_id=record_id):
+                #    edit_btn = A(I(_class = "icon icon-edit"),
+                #                 _href=URL(c="org", f="facility",
+                #                           args=[record_id, "update.popup"],
+                #                           vars={"refresh": "datalist"}),
+                #                 _class="s3_modal",
+                #                 _title=s3.crud_strings["org_facility"].title_update,
+                #                 )
+                #else:
+                #    edit_btn = ""
+                # ^^^^^
                 name = record.name
                 code = record.code
                 if code:
@@ -2034,17 +2124,26 @@ def customize_org_facility(**attr):
     standard_postp = s3.postp
     def custom_postp(r, output):
         if r.interactive:
-            if isinstance(output, dict) and \
-                current.auth.s3_has_permission("create", r.table):
+            if isinstance(output, dict):
+                from s3layouts import S3Button
+                output["showadd_btn"] = S3Button(c="org", f="facility", m="create",
+                                                 listid="datalist",
+                                                 label=T("Add New Site"),
+                                                 format="dl-button",
+                                                ).render()
+            # vvvvv
+            #if isinstance(output, dict) and \
+            #    current.auth.s3_has_permission("create", r.table):
                 # Insert a Button to Create New in Modal
-                output["showadd_btn"] = A(I(_class="icon icon-plus-sign big-add"),
-                                          _href=URL(c="org", f="facility",
-                                                    args=["create.popup"],
-                                                    vars={"refresh": "datalist"}),
-                                          _class="btn btn-primary s3_modal",
-                                          _role="button",
-                                          _title=T("Add New Site"),
-                                          )
+                #output["showadd_btn"] = A(I(_class="icon icon-plus-sign big-add"),
+                #                          _href=URL(c="org", f="facility",
+                #                                    args=["create.popup"],
+                #                                    vars={"refresh": "datalist"}),
+                #                          _class="btn btn-primary s3_modal",
+                #                          _role="button",
+                #                          _title=T("Add New Site"),
+                #                          )
+                # ^^^^^
 
             actions = [dict(label=str(T("Open")),
                             _class="action-btn",

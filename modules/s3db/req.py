@@ -3574,25 +3574,41 @@ def req_rheader(r, check_page=False):
                 site_id = request.vars.site_id
                 if site_id and not is_template:
                     site_name = s3db.org_site_represent(site_id, show_link=False)
-                    commit_btn = A(T("Send from %s") % site_name,
-                                   _href = URL(c = "req",
-                                               f = "send_req",
-                                               args = [r.id],
-                                               vars = dict(site_id = site_id)
-                                               ),
-                                   _class = "action-btn"
-                                   )
+                    from s3layouts import S3Button
+                    commit_btn = S3Button(label=T("Send from %s") % site_name,
+                                          c="req", f="send_req",
+                                          record_id=r.id,
+                                          vars=dict(site_id=site_id)
+                                         ).render()
+                    # vvvvv
+                    #commit_btn = A(T("Send from %s") % site_name,
+                    #               _href = URL(c = "req",
+                    #                           f = "send_req",
+                    #                           args = [r.id],
+                    #                           vars = dict(site_id = site_id)
+                    #                           ),
+                    #               _class = "action-btn"
+                    #               )
+                    # ^^^^^
                     s3.rfooter = TAG[""](commit_btn)
                 elif r.component and \
                      r.component_name == "commit" and \
                      r.component_id:
-                    prepare_btn = A(T("Prepare Shipment"),
-                                    _href = URL(f = "send_commit",
-                                                args = [r.component_id]
-                                                ),
-                                    _id = "send_commit",
-                                    _class = "action-btn"
-                                    )
+                    from s3layouts import S3Button
+                    prepare_btn = S3Button(label=T("Prepare Shipment"),
+                                           c="req", f="send_commit",
+                                           record_id=r.component_id,
+                                           _id="send_commit",
+                                          ).render()
+                    # vvvvv
+                    #prepare_btn = A(T("Prepare Shipment"),
+                    #                _href = URL(f = "send_commit",
+                    #                            args = [r.component_id]
+                    #                            ),
+                    #                _id = "send_commit",
+                    #                _class = "action-btn"
+                    #                )
+                    # ^^^^^
                     s3.rfooter = TAG[""](prepare_btn)
 
                 site_id = record.site_id
@@ -4185,20 +4201,31 @@ def req_render_reqs(listid, resource, rfields, record, **attr):
                    _class="pull-left",
                    )
 
-    # Edit Bar
     T = current.T
     auth = current.auth
-    s3 = current.response.s3
-    permit = auth.s3_has_permission
-    table = db.req_req
-    if permit("update", table, record_id=record_id):
-        edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh=listid)
-    else:
-        edit_btn = ""
-    if permit("delete", table, record_id=record_id):
-        delete_btn = S3CRUD.dl_delete_button(table=table)
-    else:
-        delete_btn = ""
+
+    # Edit Bar
+    from s3layouts import S3Button
+    edit_btn = S3Button(c="req", f="req", m="update",
+                        record_id=record_id, listid=listid,
+                        format="dl-button",
+                       ).render()
+    delete_btn = S3Button(c="req", f="req", m="delete",
+                          format="dl-button",
+                         ).render()
+    # vvvvv
+    #s3 = current.response.s3
+    #permit = auth.s3_has_permission
+    #table = db.req_req
+    #if permit("update", table, record_id=record_id):
+    #    edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh=listid)
+    #else:
+    #    edit_btn = ""
+    #if permit("delete", table, record_id=record_id):
+    #    delete_btn = S3CRUD.dl_delete_button(table=table)
+    #else:
+    #    delete_btn = ""
+    # ^^^^^
     edit_bar = DIV(edit_btn,
                    delete_btn,
                    _class="edit-bar fright",
@@ -4241,32 +4268,49 @@ def req_render_reqs(listid, resource, rfields, record, **attr):
             (table.req_id == record_id)
     tally_commits = db(query).count()
 
+    icon = "icon-truck"
     #if permit("create", table):
     if auth.is_logged_in():
-        _class="s3_modal btn"
-        commit_url = URL(c="req", f="commit",
-                         args=["create.popup"],
-                         vars={"req_id": record_id,
-                               "refresh": listid,
-                               "record": record_id,
-                               },
-                         )
+        vars = {"req_id": record_id}
+        commit_btn = S3Button(c="req", f="commit", m="create",
+                              record_id=record_id, listid=listid, vars=vars,
+                              icon=icon,
+                              format=S3Button.DL_BUTTON,
+                             ).render()
+        # vvvvv
+        #_class="s3_modal btn"
+        #commit_url = URL(c="req", f="commit",
+        #                 args=["create.popup"],
+        #                 vars={"req_id": record_id,
+        #                       "refresh": listid,
+        #                       "record": record_id,
+        #                       },
+        #                 )
+        # ^^^^^
     else:
-        _class="btn"
         next = "/%s/req/commit/create?req_id=%s" % (current.request.application,
                                                     record_id)
-        commit_url = URL(c="default", f="user",
-                         args="login",
-                         vars={"_next": next,
-                               },
-                         )
-    commit_btn = A(I(" ", _class="icon icon-truck"),
-                   " ",
-                   T("DONATE"),
-                   _href=commit_url,
-                   _class=_class,
-                   _title=T("Donate to this Request"),
-                   )
+        vars={"_next": next}
+        commit_btn = S3Button(c="default", f="user", m="login",
+                              vars=vars,
+                              icon=icon,
+                              format=S3Button.DL_BUTTON,
+                             ).render()
+        # vvvvv
+        #_class="btn"
+        #commit_url = URL(c="default", f="user",
+        #                 args="login",
+        #                 vars={"_next": next,
+        #                       },
+        #                 )
+    #commit_btn = A(I(" ", _class="icon icon-truck"),
+    #               " ",
+    #               T("DONATE"),
+    #               _href=commit_url,
+    #               _class=_class,
+    #               _title=T("Donate to this Request"),
+    #               )
+    # ^^^^^
 
     # Render the item
     item = DIV(DIV(card_title,
@@ -4574,20 +4618,30 @@ def req_render_commits(listid, resource, rfields, record, **attr):
                    )
 
     # Edit Bar
-    permit = current.auth.s3_has_permission
-    table = current.s3db.req_commit
-    if permit("update", table, record_id=record_id):
-        edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh=listid)
-    else:
-        edit_btn = ""
-    if permit("delete", table, record_id=record_id):
-        delete_btn = S3CRUD.dl_delete_button(table=table)
-    else:
-        delete_btn = ""
+    from s3layouts import S3Button
+    edit_btn = S3Button(c="req", f="commit", m="update",
+                        record_id=record_id, listid=listid,
+                        format="dl-button",
+                       ).render()
+    delete_btn = S3Button(c="req", f="commit", m="delete",
+                          format="dl-button",
+                         ).render()
+    # vvvvv
+    #permit = current.auth.s3_has_permission
+    #table = current.s3db.req_commit
+    #if permit("update", table, record_id=record_id):
+    #    edit_btn = S3CRUD.dl_edit_button(table=table, id=record_id, refresh=listid)
+    #else:
+    #    edit_btn = ""
+    #if permit("delete", table, record_id=record_id):
+    #    delete_btn = S3CRUD.dl_delete_button(table=table)
+    #else:
+    #    delete_btn = ""
     edit_bar = DIV(edit_btn,
                    delete_btn,
                    _class="edit-bar fright",
                    )
+    # ^^^^^
 
     card_label = TAG[""](I(_class="icon icon-offer"),
                          SPAN(" %s" % title,

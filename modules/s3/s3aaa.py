@@ -4509,6 +4509,9 @@ class S3Permission(object):
         "review": REVIEW,
         "approve": APPROVE,
         "reject": APPROVE,
+        "copy": CREATE,
+        "list": READ,
+        "summary": READ,
     })
 
     # Lambda expressions for ACL handling
