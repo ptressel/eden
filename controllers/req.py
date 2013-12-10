@@ -613,10 +613,18 @@ S3OptionsFilter({
                                 (ctable.req_id == id)
                         exists = current.db(query).select(ctable.id, limitby=(0, 1))
                         if not exists:
-                            output["form"] = A(T("Commit All"),
-                                               _href=URL(args=[id, "commit_all"]),
-                                               _class="action-btn",
-                                               _id="commit-btn")
+                            from s3.s3layouts import S3Button
+                            output["form"] = S3Button(label=T("Commit All"),
+                                                      r=r, m="commit_all",
+                                                      id=id,
+                                                      _id="commit-btn",
+                                                     ).render()
+                            # vvvvv
+                            #output["form"] = A(T("Commit All"),
+                            #                   _href=URL(args=[id, "commit_all"]),
+                            #                   _class="action-btn",
+                            #                   _id="commit-btn")
+                            # ^^^^^
                             s3.jquery_ready.append('''
 S3.confirmClick('#commit-btn','%s')''' % T("Do you want to commit to this request?"))
                         else:

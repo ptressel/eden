@@ -23,7 +23,7 @@ from s3.s3forms import S3SQLCustomForm, S3SQLInlineComponent, S3SQLInlineCompone
 from s3.s3crud import S3CRUD
 
 T = current.T
-s3 = current.response.s3  # @ToDo: We have s3, no?
+s3 = current.response.s3
 settings = current.deployment_settings
 
 """
@@ -2404,7 +2404,7 @@ def customize_org_organisation(**attr):
                                     )
                 record = r.record
                 record_id = record.id
-                from s3.s3.s3layouts import S3Button
+                from s3.s3layouts import S3Button
                 edit_btn = S3Button(c="org", f="organisation", m="update",
                                     extension="popup",
                                     id=record_id, listid="datalist",
@@ -2740,7 +2740,7 @@ def customize_pr_person(**attr):
             site_field.requires = IS_ONE_OF(current.db, "org_site.site_id",
                                             represent,
                                             orderby = "org_site.name")
-            from s3.s3.s3layouts import S3AddResourceLink
+            from s3.s3layouts import S3AddResourceLink
             site_field.comment = S3AddResourceLink(c="org", f="facility",
                                                    vars={"child": "site_id"},
                                                    label=T("Add New Site"),
@@ -3059,7 +3059,7 @@ def customize_req_req(**attr):
                                 #marker = "office",
                                 list_layout = render_sites,
                                 )
-            from s3.s3.s3layouts import S3Button
+            from s3.s3layouts import S3Button
             edit_btn = S3Button(t=table._tablename, m="update",
                                 extension="popup",
                                 id=record_id, listid="datalist",

@@ -125,7 +125,7 @@ class S3NavigationItem(object):
             @param a: the application (defaults to current.request.application)
             @param id: the record id, if this applies to a specific record (will
                    be appended to args if not already present)
-            @param r: the request to default to
+            @param r: the request to default to (id from r is not used)
 
             @param m: the URL method (will be appended to args after id, if not
                    already present)
@@ -166,6 +166,9 @@ class S3NavigationItem(object):
             self.tags = []
 
         # Request parameters
+        # @ToDo: To avoid introducing an unwanted id value for current uses of
+        # S3NavigationItem, r.id is not used. Check if this situation ever
+        # arises.)
         if r is not None:
             self.r = r
             if a is None:
@@ -178,6 +181,9 @@ class S3NavigationItem(object):
                 args = r.args
             if vars is None:
                 vars = r.vars
+            # !!!!! temporary for breakpoint
+            if r.id:
+                pass
         else:
             self.r = current.request
 
@@ -213,7 +219,7 @@ class S3NavigationItem(object):
         if id:
             self.id = str(id)
             if not len(args):
-                self.args = [self.id]
+                self.args = args = [self.id]
             # @ToDo: Is record id, when present, always the first item in args?
         else:
             if args:
