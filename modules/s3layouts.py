@@ -457,9 +457,6 @@ class S3Button(S3NavigationItem):
     BOOTSTRAP_DANGER = "btn btn-danger"
     BOOTSTRAP_DEFAULT = "btn"  # Add btn-default if we want to control the style.
 
-    # Format keyword for datalist buttons.
-    DL_BUTTON = "dl-button"
-
     # Icon classes for datalist buttons. Fallback if no icon is a labeled button.
     # @ToDo: Will we always want big-add, or should we pass it in?
     DL_BUTTON_ICON = {NOMETHOD: "icon-asterisk",
@@ -516,22 +513,22 @@ class S3Button(S3NavigationItem):
                  _title=None,
                  _type=None,
                  _value=None,
-                 format=None,
                  **attributes
                 ):
         """
             Constructor
 
             Currently supports CRUD and action buttons in either the standard
-            format, for full-sized web pages, or in "dl-button" format, for use
-            on datalist items, which may be in "card" elements, or on datalist
-            container widgets.
+            format, for full-sized web pages, or in datalist button format, for
+            use on datalist items, which may be in "card" elements, or on
+            datalist container widgets.
 
             The only required parameters for CRUD buttons are the controller and
             function or the table name (which may be supplied as the request r).
-            If the button acts on a specific record, then record_id is needed
-            (except for a "dl-button" delete). The method defaults to "list" if
-            no record_id is specified, else "read". 
+            If the button acts on a specific record, then id is needed
+            (except for a datalist button delete). For purposes of setting the
+            icon and style, the method defaults to "list" if no id is specified,
+            else "update". 
             
             For datalist buttons, the listid is required. This is the HTML id
             property of the datalist that contains this item, or "datalist".
@@ -546,8 +543,8 @@ class S3Button(S3NavigationItem):
             @param args: the URL arguments list
             @param vars: the URL variables dict
             @param extension: the URL extension
-            @param record_id: the id of the record to act on (if any) in the
-                   given table
+            @param id: the id of the record to act on (if any) in the given
+                   table t or the table specified by c and f
 
             @param r: the request to default the above from
             
@@ -571,11 +568,15 @@ class S3Button(S3NavigationItem):
             @param _value: the HTML value
             @param _target: the HTML target
 
-            @param format: keyword specifying the style of button. Default
-                   format is a standard button on a full web page.
+            @param layout: custom rendering function. Default layout is a
+                   standard button on a full web page.
                    Current alternate options are:
-                   "dl-button" for a button on an item in a datalist or on the
-                        border of a widget containing a datalist
+                   S3Button.layout_action: for "action buttons", i.e. buttons
+                       that will be included on each element in a list. (These
+                       will have "[id]" in place of an individual record id in
+                       their args.)
+                   S3Button.layout_dl: for a button on an item in a datalist or
+                       on the border of a widget containing a datalist
 
             @param attributes: any other attributes used by the layout
 
@@ -590,13 +591,9 @@ class S3Button(S3NavigationItem):
             @param listid: the listid (HTML id property of the datalist that
                    contains this item), or "datalist".
                    The URL var "refresh" will be set to the value of listid.
-                   If this is not "datalist", then "record": record_id is
-                   also included in the URL vars.
+                   If this is not "datalist", then "record": id is also
+                   included in the URL vars.
         """
-
-        layout_method = self.layout
-        if format == S3Button.DL_BUTTON:
-            layout_method = self.layout_dl
 
         # @ToDo: Clean up anything sending in alternate names for crud methods
         # then get rid of this?
@@ -604,7 +601,7 @@ class S3Button(S3NavigationItem):
             m = self.ACTION_METHOD[m]
 
         return super(S3Button, self).__init__(a=a, c=c, f=f, t=t, m=m, p=p,
-                                              record_id=record_id,
+                                              id=id,
                                               extension=extension,
                                               args=args,
                                               vars=vars,
@@ -681,7 +678,7 @@ class S3Button(S3NavigationItem):
         # breadcrumb so we could use the proper icon?
         DEFAULT_METHOD = {True: LIST,
                           False: UPDATE}
-        return DEFAULT_METHOD[item.record_id is None]
+        return DEFAULT_METHOD[item.id is None]
             
     # -------------------------------------------------------------------------
     @staticmethod
@@ -763,7 +760,7 @@ class S3Button(S3NavigationItem):
                       include more methods.
             @param t: table name (alternative to c, f)
             @param r: request (alternative to c, f, m)
-            @param record_id: id of record to edit (not needed for delete)
+            @param id: id of record to edit (not needed for delete)
             @param listid: value of refresh var, typically the listid (HTML id
                    property of the containing list) or "datalist" -- if not
                    "datalist", then "record": id is also included in vars

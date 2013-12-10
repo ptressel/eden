@@ -110,6 +110,7 @@ class S3NavigationItem(object):
                  link=True,
                  mandatory=False,
                  ltr=False,
+                 id=None,
                  **attributes):
         """
             Constructor
@@ -122,9 +123,12 @@ class S3NavigationItem(object):
             @param vars: the variables Storage
             @param extension: the request extension
             @param a: the application (defaults to current.request.application)
+            @param id: the record id, if this applies to a specific record (will
+                   be appended to args if not already present)
             @param r: the request to default to
 
-            @param m: the URL method (will be appended to args)
+            @param m: the URL method (will be appended to args after id, if not
+                   already present)
             @param p: the method to check authorization for (will not be appended to args)
             @param t: the table concerned by this request (overrides c_f for auth)
 
@@ -204,6 +208,19 @@ class S3NavigationItem(object):
         else:
             self.vars = Storage()
         self.extension = extension
+
+        # Record id
+        if id:
+            self.id = str(id)
+            if not len(args):
+                self.args = [self.id]
+            # @ToDo: Is record id, when present, always the first item in args?
+        else:
+            if args:
+                try:
+                    self.id = int(args[0])
+                except:
+                    pass
 
         # Table and method
         self.tablename = t

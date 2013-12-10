@@ -3577,7 +3577,7 @@ def req_rheader(r, check_page=False):
                     from s3layouts import S3Button
                     commit_btn = S3Button(label=T("Send from %s") % site_name,
                                           c="req", f="send_req",
-                                          record_id=r.id,
+                                          id=r.id,
                                           vars=dict(site_id=site_id)
                                          ).render()
                     # vvvvv
@@ -3597,7 +3597,7 @@ def req_rheader(r, check_page=False):
                     from s3layouts import S3Button
                     prepare_btn = S3Button(label=T("Prepare Shipment"),
                                            c="req", f="send_commit",
-                                           record_id=r.component_id,
+                                           id=r.component_id,
                                            _id="send_commit",
                                           ).render()
                     # vvvvv
@@ -4207,11 +4207,11 @@ def req_render_reqs(listid, resource, rfields, record, **attr):
     # Edit Bar
     from s3layouts import S3Button
     edit_btn = S3Button(c="req", f="req", m="update",
-                        record_id=record_id, listid=listid,
-                        format="dl-button",
+                        id=record_id, listid=listid,
+                        layout=S3Button.layout_dl,
                        ).render()
     delete_btn = S3Button(c="req", f="req", m="delete",
-                          format="dl-button",
+                          layout=S3Button.layout_dl,
                          ).render()
     # vvvvv
     #s3 = current.response.s3
@@ -4273,7 +4273,7 @@ def req_render_reqs(listid, resource, rfields, record, **attr):
     if auth.is_logged_in():
         vars = {"req_id": record_id}
         commit_btn = S3Button(c="req", f="commit", m="create",
-                              record_id=record_id, listid=listid, vars=vars,
+                              id=record_id, listid=listid, vars=vars,
                               icon=icon,
                               format=S3Button.DL_BUTTON,
                              ).render()
@@ -4620,11 +4620,11 @@ def req_render_commits(listid, resource, rfields, record, **attr):
     # Edit Bar
     from s3layouts import S3Button
     edit_btn = S3Button(c="req", f="commit", m="update",
-                        record_id=record_id, listid=listid,
-                        format="dl-button",
+                        id=record_id, listid=listid,
+                        layout=S3Button.layout_dl,
                        ).render()
     delete_btn = S3Button(c="req", f="commit", m="delete",
-                          format="dl-button",
+                          layout=S3Button.layout_dl,
                          ).render()
     # vvvvv
     #permit = current.auth.s3_has_permission
