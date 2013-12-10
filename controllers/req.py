@@ -849,7 +849,7 @@ def req_item_inv_item():
     output = {}
 
     output["title"] = T("Request Stock from Available Warehouse")
-    from s3layouts import S3Button
+    from s3.s3layouts import S3Button
     output["req_btn"] = S3button(label=T("Return to Request"),
                                  c="req", f="req", m="req_item",
                                  id=req_item.req_id,
@@ -1248,7 +1248,7 @@ def commit_rheader(r):
                                        ),
                                     ),
                                 )
-                from s3layouts import S3Button
+                from s3.s3layouts import S3Button
                 prepare_btn = S3button(label=T("Prepare Shipment"),
                                        c="req", f="send_commit",
                                        id=record.id,

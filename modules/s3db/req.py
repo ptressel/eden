@@ -4207,10 +4207,12 @@ def req_render_reqs(listid, resource, rfields, record, **attr):
     # Edit Bar
     from s3layouts import S3Button
     edit_btn = S3Button(c="req", f="req", m="update",
+                        extension="popup",
                         id=record_id, listid=listid,
                         layout=S3Button.layout_dl,
                        ).render()
     delete_btn = S3Button(c="req", f="req", m="delete",
+                          extension="popup",
                           layout=S3Button.layout_dl,
                          ).render()
     # vvvvv
@@ -4273,9 +4275,10 @@ def req_render_reqs(listid, resource, rfields, record, **attr):
     if auth.is_logged_in():
         vars = {"req_id": record_id}
         commit_btn = S3Button(c="req", f="commit", m="create",
+                              extension="popup",
                               id=record_id, listid=listid, vars=vars,
                               icon=icon,
-                              format=S3Button.DL_BUTTON,
+                              layout=S3Button.layout_dl,
                              ).render()
         # vvvvv
         #_class="s3_modal btn"
@@ -4292,9 +4295,10 @@ def req_render_reqs(listid, resource, rfields, record, **attr):
                                                     record_id)
         vars={"_next": next}
         commit_btn = S3Button(c="default", f="user", m="login",
+                              extension="popup",
                               vars=vars,
                               icon=icon,
-                              format=S3Button.DL_BUTTON,
+                              layout=S3Button.layout_dl,
                              ).render()
         # vvvvv
         #_class="btn"
@@ -4620,10 +4624,12 @@ def req_render_commits(listid, resource, rfields, record, **attr):
     # Edit Bar
     from s3layouts import S3Button
     edit_btn = S3Button(c="req", f="commit", m="update",
+                        extension="popup",
                         id=record_id, listid=listid,
                         layout=S3Button.layout_dl,
                        ).render()
     delete_btn = S3Button(c="req", f="commit", m="delete",
+                          extension="popup",
                           layout=S3Button.layout_dl,
                          ).render()
     # vvvvv
