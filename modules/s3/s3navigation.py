@@ -224,9 +224,9 @@ class S3NavigationItem(object):
         else:
             if args:
                 try:
-                    self.id = int(args[0])
+                    self.id = str(int(args[0]))
                 except:
-                    pass
+                    self.id = None
 
         # Table and method
         self.tablename = t

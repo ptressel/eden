@@ -4273,13 +4273,18 @@ def req_render_reqs(listid, resource, rfields, record, **attr):
     icon = "icon-truck"
     #if permit("create", table):
     if auth.is_logged_in():
+        c="req"
+        f="commit"
+        m="create"
         vars = {"req_id": record_id}
-        commit_btn = S3Button(c="req", f="commit", m="create",
-                              extension="popup",
-                              id=record_id, listid=listid, vars=vars,
-                              icon=icon,
-                              layout=S3Button.layout_dl,
-                             ).render()
+        id=record_id
+        listid=listid
+        #commit_btn = S3Button(c="req", f="commit", m="create",
+        #                      extension="popup",
+        #                      id=record_id, listid=listid, vars=vars,
+        #                      icon=icon,
+        #                      layout=S3Button.layout_dl,
+        #                     ).render()
         # vvvvv
         #_class="s3_modal btn"
         #commit_url = URL(c="req", f="commit",
@@ -4291,15 +4296,20 @@ def req_render_reqs(listid, resource, rfields, record, **attr):
         #                 )
         # ^^^^^
     else:
+        c="default"
+        f="user"
+        m="login"
         next = "/%s/req/commit/create?req_id=%s" % (current.request.application,
                                                     record_id)
         vars={"_next": next}
-        commit_btn = S3Button(c="default", f="user", m="login",
-                              extension="popup",
-                              vars=vars,
-                              icon=icon,
-                              layout=S3Button.layout_dl,
-                             ).render()
+        id=None
+        listid=None
+        #commit_btn = S3Button(c="default", f="user", m="login",
+        #                      extension="popup",
+        #                      vars=vars,
+        #                      icon=icon,
+        #                      layout=S3Button.layout_dl,
+        #                     ).render()
         # vvvvv
         #_class="btn"
         #commit_url = URL(c="default", f="user",
@@ -4307,6 +4317,14 @@ def req_render_reqs(listid, resource, rfields, record, **attr):
         #                 vars={"_next": next,
         #                       },
         #                 )
+    commit_btn = S3Button(c=c, f=f, m=m,
+                          extension="popup",
+                          id=record_id, listid=listid, vars=vars,
+                          icon=icon,
+                          label=T("DONATE"),
+                          tooltip=T("Donate to this Request"),
+                          layout=S3Button.layout_dl,
+                         ).render()
     #commit_btn = A(I(" ", _class="icon icon-truck"),
     #               " ",
     #               T("DONATE"),

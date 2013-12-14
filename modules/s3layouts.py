@@ -497,6 +497,7 @@ class S3Button(S3NavigationItem):
                  id=None,
                  r=None,
                  url=None,
+                 listid=None,
                  title=None,
                  tooltip=None,
                  icon=None,
@@ -559,12 +560,10 @@ class S3Button(S3NavigationItem):
             # DOM properties
             # @ToDo: Allow _class to completely override the layout class and
             # pass in additional classes another way?
-            @param _class: the HTML class (this is added to layout classes)
-            @param _href: the HTML href (overrides layout-generated href)
+            @param _class: the HTML class -- this is added to layout classes
             @param _id: the HTML id
             @param _name: the HTML name
             @param _target: the HTML target
-            @param _title: the HTML title
             @param _type: the HTML type
             @param _value: the HTML value
 
@@ -600,6 +599,10 @@ class S3Button(S3NavigationItem):
         if m in self.ACTION_METHOD:
             m = self.ACTION_METHOD[m]
 
+        # @ToDo: Maybe standardize on tooltip?
+        if _title and not tooltip:
+            tooltip = _title
+
         return super(S3Button, self).__init__(a=a, c=c, f=f, t=t, m=m, p=p,
                                               extension=extension,
                                               id=id,
@@ -607,10 +610,11 @@ class S3Button(S3NavigationItem):
                                               vars=vars,
                                               r=r,
                                               url=url,
+                                              listid=listid,
                                               label=label,
+                                              title=title,
                                               tooltip=tooltip,
                                               icon=icon,
-                                              format=format,
                                               custom=custom,
                                               layout=layout,
                                               crud_name=crud_name,
@@ -619,7 +623,6 @@ class S3Button(S3NavigationItem):
                                               _class=_class,
                                               _type=_type,
                                               _value=_value,
-                                              _title=_title,
                                               _target=_target,
                                               **attributes
                                              )
@@ -663,8 +666,9 @@ class S3Button(S3NavigationItem):
             in the href.
         """
 
-        if item.method:
-            return item.method
+        method = item.method
+        if method:
+            return method
 
         # It is only appropriate to default the method when the request is
         # for a resource, rather than for a custom function.
@@ -679,7 +683,107 @@ class S3Button(S3NavigationItem):
         DEFAULT_METHOD = {True: LIST,
                           False: UPDATE}
         return DEFAULT_METHOD[item.id is None]
-            
+
+    
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def make_label(item, icons=None):
+        """
+            Make label elements out of the supplied icon and text label.
+
+            Expects that item.style_method has already been set.
+            Icon and / or label are only defaulted if neither is supplied.
+            @ToDo: Currently an icon is preferred, but make this selectable by
+            the site.
+
+            @param icons: Provide the appropriate icons for this button type
+            as a dict with method as keyword, or None if no icons.
+
+            The resulting elements are returned in a list. Unpack this list as
+            the first argument to A.
+        """
+
+        icon = item.attr.icon
+        label = item.label
+
+        # If neither icon nor label supplied, find a default.
+        if not icon and not label:
+            if icons:
+                icon = icons.get(item.style_method, None)
+            if not icon:
+                label = S3Button.crud_string(item)
+                if not label:
+                    return [" "]  # No default found.
+
+        # Here, we have either or both of icon and label.
+        if icon:
+            full_label = [I(" ", _class="icon %s" % icon)]
+        else:
+            full_label = []
+        if label:
+            if full_label:
+                full_label.append(" ")  # Separate icon and label
+            if isinstance(label, (list, tuple)):
+                full_label.extend(label)
+            else:
+                full_label.append(label)
+        return full_label
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def add_tooltip(item, button):
+        """
+            Construct either a plain text or widget tooltip.
+        """
+
+        attr = item.attr
+        title = attr.title
+        tooltip = attr.tooltip
+        widget = False
+
+        if title and tooltip:
+            tooltip = "%s|%s" % (title, tooltip)
+            widget = True
+        else:
+            if title:
+                tooltip = title
+            if "|" in tooltip:
+                widget = True
+
+        if widget:
+            tooltip_widget = DIV(_class="tooltip",
+                                 _title=tooltip)
+            return DIV(button, tooltip_widget)
+        else:
+            button["_title"] = tooltip
+            return button
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def construct_button(item, _href=None, _class=None):
+        """
+            After layout-specific choice of attributes, construct the button.
+        """
+
+        opts = item.opts
+
+        label = S3Button.make_label(item, S3Button.DL_BUTTON_ICON)
+
+        button = A(label,
+                   _href=_href,
+                   _class=_class,
+                   _role="button",
+                   _id=opts._id,
+                   _name=opts._name,
+                   _type=opts._type,
+                   _value=opts._value,
+                   _target=opts._target,
+                  )
+
+        button = S3Button.add_tooltip(item, button)
+
+        return button
+
     # -------------------------------------------------------------------------
     @staticmethod
     def layout(item):
@@ -697,48 +801,25 @@ class S3Button(S3NavigationItem):
         attr = item.attr
         opts = item.opts
 
-        # Custom button?
+        # Custom button? @ToDo: Can these be constructed here?
         custom = attr.custom
         if custom and bootstrap and hasattr(custom, "add_class"):
             custom.add_class(S3Button.BOOTSTRAP_PRIMARY)
             return custom
 
+        item.style_method = style_method = S3Button.style_method(item)
+
         # @ToDo: This is for class action-btn -- should this be a special case?
         custom_class = opts.get("_class", "")
         _class = "%s %s" % (S3Button.ACTION_BUTTON, custom_class)
         # @ToDo: Is this a misuse of bootstrap btn-primary? It is supposed to
-        # go in one main / emphasized button in a set of buttons, no?)
+        # go on one main / emphasized button in a set of buttons, no?)
         if bootstrap:
             _class = "%s %s" % (_class, S3Button.BOOTSTRAP_PRIMARY)
 
-        label = item.label
-        if not label:
-            label = S3Button.crud_string(item)
+        _href=item.url()
 
-        _href = opts._href
-        if not _href:
-            _href=item.url()
-
-        button = A(label,
-                   _class=_class,
-                   _href=_href,
-                   _role="button",
-                   _title=" ",
-                   _id=opts._id,
-                   _name=opts._name,
-                   _target=opts._target,
-                   _type=opts._type,
-                   _value=opts._value,
-                  )
-
-        title = opts._title
-        tooltip = item.tooltip
-        if tooltip is not None:
-            if title is None:
-                title = label
-            ttip = DIV(_class="tooltip",
-                       _title="%s|%s" % (title, tooltip))
-            button = DIV(button, ttip)
+        button = S3Button.construct_button(item, _href, _class)
 
         return button
 
@@ -748,28 +829,21 @@ class S3Button(S3NavigationItem):
         """
             Layout for a CRUD or action button in datalist format
 
-            Typically these will be either edit or delete buttons for datalist
-            item thumbnails on cards, or an add button on the datalist container
-            widget.
-            
-            A datalist button is typically small, so currently uses only an icon
-            with no label. For the tooltip, a supplied tooltip will be used if
-            any, else the label, else the crud string for the supplied
-            crud_name, else the crud string associated with the method.
+            Typically these will be small buttons (e.g. edit or delete) for
+            datalist item thumbnails on cards, or an add button on the datalist
+            container widget. The main distinction is the use of listid to
+            associate container and card, the fact that delete requires special
+            handling in the client, and datalist-specific classes.
     
-            The following should be provided
-            @param c: controller
-            @param f: function
+            Datalist-specific parameter info:
             @param m: method: See the DL_BUTTON_* tables above for which methods
                       currently have default icons, etc. Add to said tables to
                       include more methods.
-            @param t: table name (alternative to c, f)
-            @param r: request (alternative to c, f, m)
-            @param id: id of record to edit (not needed for delete)
+            @param id: id of record to edit. Not needed for delete.
             @param listid: value of refresh var, typically the listid (HTML id
-                   property of the containing list) or "datalist" -- if not
-                   "datalist", then "record": id is also included in vars
-            @param vars: any extra vars besides record and refresh.
+                   property of the containing list) or "datalist". If not
+                   "datalist", then "record": id is also included in vars.
+                   @ToDo: find out what listid="datalist" means and add here.
 
             See optional params in S3Button.__init__.
 
@@ -780,36 +854,19 @@ class S3Button(S3NavigationItem):
         if not item.authorized:
             return ""
 
-        s3 = current.response.s3
-        crud = s3.crud
-        bootstrap = crud.formstyle == "bootstrap"
+        bootstrap = current.response.s3.crud.formstyle == "bootstrap"
 
         attr = item.attr
         opts = item.opts
-        vars = attr.vars
-        method = item.method
-        style_method = S3Button.style_method(item)
 
+        item.style_method = style_method = S3Button.style_method(item)
+
+        vars = attr.vars
         listid = attr.listid
         if listid:
             vars["refresh"] = listid
             if listid != "datalist":
                 vars["record"] = id
-
-        label = item.label
-        if not label:
-            label = S3Button.crud_string(item)
-
-        tooltip = attr.tooltip
-        if not tooltip:
-            tooltip = label
-
-        # An icon is preferred to a text label for these (small) buttons.
-        icon = attr.icon
-        if not icon:
-            icon = S3Button.DL_BUTTON_ICON.get(style_method, None)
-        if icon:
-            label = I(" ", _class="icon %s" % icon)
 
         dl_class = S3Button.DL_BUTTON_CLASS.get(style_method, "")
         custom_class = opts.get("_class", "")
@@ -818,27 +875,17 @@ class S3Button(S3NavigationItem):
             b_class = S3Button.DL_BUTTON_BOOTSTRAP.get(style_method, "")
             _class = "%s %s" % (_class, b_class)
 
-        # Delete is a special case, handled from the client, as it must
-        # remove the card from its container.
-        if method == DELETE:
+        # Delete is a special case, handled from the client, as it must remove
+        # the card from its container. Caller is permitted to set href in any
+        # case.
+        method = item.method
+        if method == S3Button.DELETE and not item.override_url:
             _href = None
         else:
-            _href = opts._href
-            if not _href:
-                _href = item.url()
+            _href = item.url()
 
-        btn = A(label,
-                _href=_href,
-                _class=_class,
-                _title=tooltip,
-                _role="button",
-                _id=opts._id,
-                _name=opts._name,
-                _type=opts._type,
-                _value=opts._value,
-                _target=opts._target,
-               )
+        button = S3Button.construct_button(item, _href, _class)
 
-        return btn
+        return button
 
 # END =========================================================================
