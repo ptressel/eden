@@ -634,8 +634,10 @@ class S3Button(S3NavigationItem):
         """ Get appropriate crud string or substitute """
 
         crud_str = ""
-        attr = item.attr
-        crud_name = attr.crud_name
+        opts = item.opts
+        crud_name = opts.crud_name
+        #attr = item.attr
+        #crud_name = attr.crud_name
         method = item.method
         tablename = item.tablename
         if not crud_name and method:
@@ -703,7 +705,8 @@ class S3Button(S3NavigationItem):
             the first argument to A.
         """
 
-        icon = item.attr.icon
+        icon = item.opts.icon
+        #icon = item.attr.icon
         label = item.label
 
         # If neither icon nor label supplied, find a default.
@@ -736,19 +739,24 @@ class S3Button(S3NavigationItem):
             Construct either a plain text or widget tooltip.
         """
 
-        attr = item.attr
-        title = attr.title
-        tooltip = attr.tooltip
-        widget = False
+        opts = item.opts
+        title = opts.title
+        tooltip = opts.tooltip
+        #attr = item.attr
+        #title = attr.title
+        #tooltip = attr.tooltip
 
+        widget = False
         if title and tooltip:
             tooltip = "%s|%s" % (title, tooltip)
             widget = True
         else:
             if title:
                 tooltip = title
-            if "|" in tooltip:
-                widget = True
+            if tooltip:
+                widget = "|" in tooltip
+            else:
+                return button
 
         if widget:
             tooltip_widget = DIV(_class="tooltip",
@@ -765,7 +773,8 @@ class S3Button(S3NavigationItem):
             After layout-specific choice of attributes, construct the button.
         """
 
-        opts = item.opts
+        attr = item.attr
+        #opts = item.opts
 
         label = S3Button.make_label(item, S3Button.DL_BUTTON_ICON)
 
@@ -773,11 +782,16 @@ class S3Button(S3NavigationItem):
                    _href=_href,
                    _class=_class,
                    _role="button",
-                   _id=opts._id,
-                   _name=opts._name,
-                   _type=opts._type,
-                   _value=opts._value,
-                   _target=opts._target,
+                   _id=attr._id,
+                   _name=attr._name,
+                   _type=attr._type,
+                   _value=attr._value,
+                   _target=attr._target,
+                   #_id=opts._id,
+                   #_name=opts._name,
+                   #_type=opts._type,
+                   #_value=opts._value,
+                   #_target=opts._target,
                   )
 
         button = S3Button.add_tooltip(item, button)
@@ -802,7 +816,8 @@ class S3Button(S3NavigationItem):
         opts = item.opts
 
         # Custom button? @ToDo: Can these be constructed here?
-        custom = attr.custom
+        custom = opts.custom
+        #custom = attr.custom
         if custom and bootstrap and hasattr(custom, "add_class"):
             custom.add_class(S3Button.BOOTSTRAP_PRIMARY)
             return custom
@@ -810,7 +825,8 @@ class S3Button(S3NavigationItem):
         item.style_method = style_method = S3Button.style_method(item)
 
         # @ToDo: This is for class action-btn -- should this be a special case?
-        custom_class = opts.get("_class", "")
+        custom_class = attr.get("_class", "")
+        #custom_class = opts.get("_class", "")
         _class = "%s %s" % (S3Button.ACTION_BUTTON, custom_class)
         # @ToDo: Is this a misuse of bootstrap btn-primary? It is supposed to
         # go on one main / emphasized button in a set of buttons, no?)
@@ -861,15 +877,18 @@ class S3Button(S3NavigationItem):
 
         item.style_method = style_method = S3Button.style_method(item)
 
-        vars = attr.vars
-        listid = attr.listid
+        vars = opts.vars
+        listid = opts.listid
+        #vars = attr.vars
+        #listid = attr.listid
         if listid:
             vars["refresh"] = listid
             if listid != "datalist":
                 vars["record"] = id
 
         dl_class = S3Button.DL_BUTTON_CLASS.get(style_method, "")
-        custom_class = opts.get("_class", "")
+        custom_class = attr.get("_class", "")
+        #custom_class = opts.get("_class", "")
         _class = "%s %s" % (dl_class, custom_class)
         if bootstrap:
             b_class = S3Button.DL_BUTTON_BOOTSTRAP.get(style_method, "")
