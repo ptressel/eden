@@ -825,9 +825,10 @@ class S3Button(S3NavigationItem):
         item.style_method = style_method = S3Button.style_method(item)
 
         # @ToDo: This is for class action-btn -- should this be a special case?
-        custom_class = attr.get("_class", "")
-        #custom_class = opts.get("_class", "")
-        _class = "%s %s" % (S3Button.ACTION_BUTTON, custom_class)
+        _class = S3Button.ACTION_BUTTON
+        custom_class = attr._class
+        if custom_class:
+            _class = "%s %s" % (_class, custom_class)
         # @ToDo: Is this a misuse of bootstrap btn-primary? It is supposed to
         # go on one main / emphasized button in a set of buttons, no?)
         if bootstrap:
@@ -886,10 +887,10 @@ class S3Button(S3NavigationItem):
             if listid != "datalist":
                 vars["record"] = id
 
-        dl_class = S3Button.DL_BUTTON_CLASS.get(style_method, "")
-        custom_class = attr.get("_class", "")
-        #custom_class = opts.get("_class", "")
-        _class = "%s %s" % (dl_class, custom_class)
+        _class = S3Button.DL_BUTTON_CLASS.get(style_method, "")
+        custom_class = attr._class
+        if custom_class:
+            _class = "%s %s" % (_class, custom_class)
         if bootstrap:
             b_class = S3Button.DL_BUTTON_BOOTSTRAP.get(style_method, "")
             _class = "%s %s" % (_class, b_class)
