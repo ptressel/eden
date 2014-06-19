@@ -72,11 +72,13 @@ class S3CAPModel(S3Model):
         T = current.T
         db = current.db
         settings = current.deployment_settings
+        s3db = current.s3db
 
         add_components = self.add_components
         configure = self.configure
         crud_strings = current.response.s3.crud_strings
         define_table = self.define_table
+        super_link = self.super_link
 
         # ---------------------------------------------------------------------
         # List of Incident Categories -- copied from irs module <--
@@ -277,11 +279,16 @@ class S3CAPModel(S3Model):
                            default = self.generate_identifier,
                            label = T("Identifier"),
                            ),
-                     Field("sender",
-                           label = T("Sender"),
-                           default = self.generate_sender,
-                           # @todo: can not be empty in alerts (validator!)
-                           ),
+                     # Sender -- required for actual alert but not for template.
+                     super_link("pe_id", "pr_pentity",
+                                label = T("Sender"),
+                                readable = True,
+                                writable = True,
+                                empty = True,
+                                default = self.default_sender,
+                                represent = s3db.pr_PersonEntityRepresent(show_label=False),
+                                widget = S3PentityAutocompleteWidget(),
+                                ),
                      s3_datetime("sent",
                                  default = "now",
                                  writable = False,
@@ -330,7 +337,7 @@ class S3CAPModel(S3Model):
                      Field("reference", "list:reference cap_alert",
                            label = T("Reference"),
                            represent = S3Represent(lookup = tablename,
-                                                   fields = ["msg_type", "sent", "sender"],
+                                                   fields = ["msg_type", "sent", "pe_id"],
                                                    field_sep = " - ",
                                                    multiple = True,
                                                    ),
@@ -356,7 +363,7 @@ class S3CAPModel(S3Model):
 
         filter_widgets = [
             S3TextFilter(["identifier",
-                          "sender",
+                          "pe_id",
                           "incidents",
                           "cap_info.headline",
                           "cap_info.event",
@@ -407,7 +414,7 @@ class S3CAPModel(S3Model):
                 msg_list_empty = T("No alerts to show"))
 
         alert_represent = S3Represent(lookup = tablename,
-                                      fields = ["msg_type", "sent", "sender"],
+                                      fields = ["msg_type", "sent", "pe_id"],
                                       field_sep = " - ")
 
         alert_id = S3ReusableField("alert_id", "reference %s" % tablename,
@@ -931,16 +938,13 @@ class S3CAPModel(S3Model):
 
     # -------------------------------------------------------------------------
     @staticmethod
-    def generate_sender():
+    def default_sender():
         """
             Generate a sender for a new form
         """
-        try:
-            user_id = current.auth.user.id
-        except AttributeError:
-            return ""
-
-        return "%s/%d" % (current.xml.domain, user_id)
+        auth = current.auth
+        user_pe_id = auth.user.pe_id if auth.is_logged_in() else None
+        return user_pe_id
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -993,6 +997,13 @@ class S3CAPModel(S3Model):
         if form_vars.get("scope") == "Private" and not form_vars.get("addresses"):
             form.errors["addresses"] = \
                 current.T("'Recipients' field mandatory in case of 'Private' scope")
+        # A non-template alert requires a sender.
+        is_template = form_vars.get("is_template")
+        pe_id = form_vars.get("pe_id")
+        if not is_template and not pe_id:
+            form.errors["pe_id"] = \
+                current.T("Sender is needed for non-template alerts.")
+
         return
 
     # -------------------------------------------------------------------------
@@ -1383,9 +1394,9 @@ def cap_gis_location_xml_post_render(element, record):
     """
         Convert Eden WKT polygon (and eventually circle) representation to
         CAP format and provide them in the rendered s3xml.
-        
-        Not all internal formats have a parallel in CAP, but an effort is made
-        to provide a resonable substitute:
+
+        Notes re. geometry: Not all internal formats have a parallel in CAP,
+        but an effort is made to provide a resonable substitute:
         Polygons are supported.
         Circles that were read in from CAP (and thus carry the original CAP
             circle data) are supported.
@@ -1403,15 +1414,9 @@ def cap_gis_location_xml_post_render(element, record):
             lat1,lon1 lat2,lon2 lat3,lon3 ... lat1,lon1
     """
 
-    # @ToDo: Can we rely on gis_feature_type == 3 to tell if the location is a
-    # polygon, or is it better to look for POLYGON in the wkt? For now, check
-    # both.
     # @ToDo: CAP does not support multipolygons.  Do we want to extract their
-    # outer polygon if passed MULTIPOLYGON wkt? For now, these are exported
-    # with their bounding box as the polygon.
-    # @ToDo: What if a point (gis_feature_type == 1) that is not a CAP circle
-    # has a non-point bounding box? Should it be rendered as a polygon for
-    # the bounding box?
+    # outer polygons and combine them, if passed MULTIPOLYGON wkt? For now,
+    # these are exported with their bounding box as the polygon.
 
     try:
         from lxml import etree
@@ -1485,7 +1490,7 @@ def cap_gis_location_xml_post_render(element, record):
     # circle or polygon: Locations with a bounding box will get a box polygon,
     # points will get a zero-radius circle.
     
-    # Currently wkt is stripped out of gis_location records right here:
+    # @ToDo: Currently wkt is stripped out of gis_location records right here:
     # https://github.com/flavour/eden/blob/master/modules/s3/s3resource.py#L1332
     # https://github.com/flavour/eden/blob/master/modules/s3/s3resource.py#L1426
     # https://github.com/flavour/eden/blob/master/modules/s3/s3resource.py#L3152
@@ -1512,30 +1517,20 @@ def cap_gis_location_xml_post_render(element, record):
             return
         # Fall through if the wkt string was mal-formed.
 
-    # CAP circle stored in a gis_location_tag with tag = cap_circle.
-    # If there is a cap_circle tag, we don't need to do anything further, as
-    # export.xsl will use it. However, we don't know if there is a cap_circle
-    # tag...
-    #
-    # @ToDo: The export calls xml_post_render after processing a resource's
-    # fields, but before its components are added as children in the xml tree.
-    # If this were delayed til after the components were added, we could look
-    # there for the cap_circle gis_location_tag record. Since xml_post_parse
-    # isn't in use yet (except for this), maybe we could look at moving it til
-    # after the components?
-    #
-    # For now, with the xml_post_render before components: We could do a db
-    # query to check for a real cap_circle tag record, and not bother with
-    # creating fallbacks from bounding box or point...but we don't have to.
-    # Instead, just go ahead and add the fallbacks under different tag names,
-    # and let the export.xsl sort them out. This only wastes a little time
-    # compared to a db query.
-    
     # ToDo: MULTIPOLYGON -- Can stitch together the outer polygons in the
     # multipolygon, but would need to assure all were the same handedness.
-    
+
     # The remaining cases are for locations that don't have either polygon wkt
     # or a cap_circle tag.
+
+    # If there is a CAP circle stored in a gis_location_tag with tag =
+    # cap_circle, we don't need to do anything further, as export.xsl will
+    # use it. However, here, we don't know if there is a cap_circle tag, as
+    # export calls xml_post_render after processing a resource's fields, but
+    # before its components are added as children in the xml tree. Hence the
+    # remaining options, which produce CAP geometry for ordinary location
+    # records, may produce unneeded geometry for a location with a cap_circle.
+    # The unneeded geometry will be ignored by export.xsl.
     
     # Bounding box: Make a four-vertex polygon from the bounding box.
     # This is a fallback, as if there is a circle tag, we'll use that.
@@ -1584,6 +1579,75 @@ def cap_gis_location_xml_post_render(element, record):
     # ToDo: Other WKT.
 
     # Did not find anything to use. Presumably the area has a text description.
+    return
+
+# =============================================================================
+def cap_alert_xml_post_render(element, record):
+    """
+        Identify the sender, based on the alert's pe_id.
+
+        For a sender with pe_id (which is currently required), use the sender's
+        email address if available, else represent of the name.
+    """
+
+    # @ToDo: What site or per-organization (for multi-tenancy) settings make
+    # sense as a default CAP sender? If we want to require pe_id, we can still
+    # to that by pointing to an appropriate pentity (e.g. office or org), or
+    # by making a stub pentity to hold the CAP sender information. E.g. an org
+    # might want a "house name" such as Public Information Officer, and use an
+    # email address at which they take public queries. In this case, the email
+    # would be stored in contacts, not auth_user, as the pentity does not need
+    # to log in.
+    
+    # @ToDo: Should we format the email address to include the name, as:
+    # <Name> user@example.com
+
+    try:
+        from lxml import etree
+    except:
+        # This won't fail, since we're in the middle of processing xml.
+        return
+
+    SubElement = etree.SubElement
+    s3xml = current.xml
+    DATA = s3xml.TAG["data"]
+    FIELD = s3xml.ATTRIBUTE["field"]
+
+    def __cap_alert_add_sender(element, sender):
+        """
+            Helper for cap_alert_xml_post_render that adds the sender.
+        """
+        # The element is the alert itself, so we just add a field.
+        sender_field = SubElement(element, DATA)
+        sender_field.set(FIELD, "sender")
+        sender_field.text = sender
+
+    s3db = current.s3db
+    db = current.db
+    utable = s3db.auth_user
+    ltable = s3db.pr_person_user
+    ctable = s3db.pr_contact
+    pe_id = record.get("pe_id", None)
+
+    # First see if there is an auth_user record with email.
+    query = (ltable.pe_id == pe_id) & (ltable.user_id == utable.id)
+    user_email = db(query).select(utable.email, limitby=(0, 1)).first()
+    if user_email:
+        sender = user_email.email.strip().lower()
+        __cap_alert_add_sender(element, sender)
+        return
+
+    # If not, look for a contact email.
+    query = (ctable.pe_id == pe_id) & (ctable.contact_method == "EMAIL")
+    contact_email = db(query).select(ctable.value, limitby=(0, 1)).first()
+    if contact_email:
+        sender = contact_email.value.strip().lower()
+        __cap_alert_add_sender(element, sender)
+        return
+
+    # Else, use the representation of the name.
+    sender = s3db.pr_pentity_represent(pe_id, show_label=False, show_link=False)
+    __cap_alert_add_sender(element, sender)
     return
 
 # -----------------------------------------------------------------------------

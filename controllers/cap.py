@@ -400,11 +400,11 @@ def alert_fields_comments():
               T("A unique identifier of the alert message"),
               T("A number or string uniquely identifying this message, assigned by the sender. Must notnclude spaces, commas or restricted characters (< and &).")))
 
-    table.sender.comment = DIV(
+    table.pe_id.comment = DIV(
           _class="tooltip",
           _title="%s|%s" % (
-              T("The identifier of the sender of the alert message"),
-              T("This is guaranteed by assigner to be unique globally; e.g., may be based on an Internet domain name. Must not include spaces, commas or restricted characters (< and &).")))
+              T("The sender of the alert message"),
+              T("The person or organization sending this alert. May be empty for templates.")))
 
     table.status.comment = DIV(
           _class="tooltip",
