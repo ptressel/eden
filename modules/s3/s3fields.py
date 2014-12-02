@@ -961,7 +961,7 @@ def s3_authorstamp():
     auth = current.auth
     utable = auth.settings.table_user
 
-    if auth.is_logged_in():
+    if auth.is_logged_in() and current.session.auth:
         current_user = current.session.auth.user.id
     else:
         current_user = None
@@ -1002,14 +1002,17 @@ def s3_ownerstamp():
     auth = current.auth
     utable = auth.settings.table_user
 
+    if auth.is_logged_in() and current.session.auth:
+        current_user = current.session.auth.user.id
+    else:
+        current_user = None
+
     # Individual user who owns the record
     s3_meta_owned_by_user = S3ReusableField("owned_by_user", utable,
                                             readable=False,
                                             writable=False,
                                             requires=None,
-                                            default=current.session.auth.user.id
-                                                        if auth.is_logged_in()
-                                                        else None,
+                                            default=current_user,
                                             represent=lambda id: \
                                                 id and s3_auth_user_represent(id) or \
                                                        current.messages.UNKNOWN_OPT,
